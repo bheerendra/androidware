@@ -1,0 +1,146 @@
+Require things+knowledge of:-
+1. MTK Device's boot.img and custom recovery.img (CWM/TWRP/etc)
+2. Windows PC with Cygwin and MT65xx .img unpack/repack scripts
+3. Notepad++
+4. A Class 6 or better Micro SD Card+a good card reader (lower than class 6 will give you lags/phone freeze, but, it'll work)
+5. Mini tool partition wizard
+6. Working roms for your device
+7. A compression tool (i use 7zip)
+8. Mobile uncle tool (google play, apk) installed in phone (or sp flash tool in pc, if you want it this way )
+
+
+Steps:-
+
+1. PARTITIONING MEMORY CARD:
+Plug your memory card using card reader and copy everything from it to PC as we are going to partition it.
+All partitions are PRIMARY
+
+Select your card in mini tool and delete the partition. Partition it as follows-
+
+First Partition-FAT32 (total memory card size-1924mb) <----- SD CARD
+This is the space you will see as your memory card (external sd) in both of your roms.
+
+Second Partition-EXT4 (550mb) <------ SYSTEM
+This is System Partition of Second Rom
+
+Third Partition-EXT4 (1024mb) <----- DATA
+This is Data Partition of Second Rom, apps will go here
+
+Fourth Partition-EXT4 (350mb) <----- CACHE
+You can reduce it a bit more if you want to.
+
+
+
+2. PREPARING SECONDARY ROM'S ZIP:
+Get the updater-script of the rom you want to dual boot and open it up in notepad++
+Press ctrl+F in notepad++ and go to replace tab.
+
+Find what-mmcblk0p3 (may differ for different devices, look for "mount("ext4", "EMMC", "/dev/block/mmcblk0p3");" in updater script to know)
+Replace with-mmcblk1p2
+
+Save it and move it back to its location in zip (META-INF\com\google\android)
+Note: if there is data folder in rom's zip then you also have to replace data partition block with mmcblk1p3, like: mmcblk0p5--->mmcblk1p3
+
+
+
+3. PREPARING SECONDARY ROM'S BOOT.IMG:[/COLOR]
+Unpack boot.img of the rom you want to dual boot using mt65xx tool and cygwin.
+Open notepad++ and drag and drop all files of ram-disk to notepad++
+Once again, find and replace:
+
+Find what-emmc@android
+Replace with-mmcblk1p2
+
+Find what-emmc@usrdata
+Replace with-mmcblk1p3
+
+Find what-emmc@cache
+Replace with-mmcblk1p4
+
+Save all and pack the ram-disk with kernel to dualboot.img
+
+
+
+4. PREPARING SECONDARY ROM'S RECOVERY (OPTIONAL IF YOU DON'T WANT TO CHANGE THE SECONDARY ROM EVER):[/COLOR]
+Unpack recovery.img like your unpacked boot.img and open 'etc\recovery.fstab' with notepad++
+
+Edit from this-
+Code:
+# mount point	fstype		device			[device2]
+
+/boot		emmc		/dev/bootimg
+/cache		ext4		/emmc@cache
+/data		ext4		/emmc@usrdata
+/misc		emmc		/dev/misc
+/recovery	emmc		/dev/recovery
+/emmc		vfat		/emmc@fat
+/system		ext4		/emmc@android
+/sdcard		vfat		/dev/block/mmcblk1p1	/dev/block/mmcblk1
+/sd-ext         auto            /dev/block/mmcblk1p2
+to this
+Code:
+# mount point	fstype		device			[device2]
+
+/boot		emmc		/dev/bootimg
+/cache		ext4		/dev/block/mmcblk1p4
+/data		ext4		/dev/block/mmcblk1p3
+/misc		emmc		/dev/misc
+/recovery	emmc		/dev/recovery
+/emmc		vfat		/emmc@fat
+/system	        ext4		/dev/block/mmcblk1p2
+/sdcard		vfat		/dev/block/mmcblk1p1	/dev/block/mmcblk1
+#/sd-ext        auto            /dev/block/mmcblk1p5
+Save and pack the edited one as dualrecovery.img.
+
+
+
+5. MAKING UPDATE.ZIP FOR BOOT.IMG:
+Download Boot.zip, copy it once, open Boot.zip with 7zip and place your Primary Rom's boot.img (replace the dummy one) in it with meta-inf folder.
+Rename the Copy of Boot.zip to DualBoot.zip and place Secondary Rom's boot.img (the one you edited in step 3) in it with meta-inf folder.
+
+
+
+6. SETTING UP IN MEMORY CARD:
+a. Move all initially copied files back to your card
+b. Create 2 folders with names:
+"1Primary Rom"
+"1Secondary Rom"
+
+In "1Primary Rom" copy/move-
+a. Boot.zip
+c. Primary Rom.zip (not required)
+
+In "1Secondary Rom" copy/move-
+a. DualBoot.zip
+b. Secondary Rom.zip
+
+
+
+7. FLASHING/SWITCHING ROMS:
+Just reboot to recovery and flash the Secondary rom from "1Secondary Rom' folder and after that flash "DualBoot.zip"
+You will be rebooted to secondary rom automatically.
+
+To Switch Roms, Reboot to recovery and flash Boot.zip for primary and DualBoot.zip for secondary rom.
+
+
+
+8. SYNC DATA OF APPS BETWEEN ROMS:
+Like in my case, if you want to test/use both rom at the same time or want to use features of both roms at the same time, consider making a filter in primary rom's titanium backup, of user apps which are common in both the roms, and export the list to clipboard.
+
+Create a widget of ti backup up to 'backup all modified data' and use the filter you just created.
+Open any file explorer (i use es file explorer) and create a new text file and past the list of apps (you exported to clipboard in ti backup), save it.
+Reboot to secondary rom, open that text file, copy everything, open ti backup, create filter, import from clipboard, save and create a widget same way.
+Restore date of this filter in secondary rom.
+
+Whenever you want to switch rom, tap the widget, reboot to secondary/primary rom, restore filter.
+
+For contacts, calender, browser bookmarks, etc, use google account to sync in both roms.
+
+
+Notes:
+1. By this folder preparation in memory card, you will get these two folders at the top in cwm recovery, this is for ease only.
+2. If you want to use data on sd kind of thing, use mmcblk1p5 instead of mmcblk1p2 (not tested if data on sd will work or not with secondary rom)
+3. If you want to apply any update to secondary rom, check the updater-script of the update if there is a need to edit mount path (mmcblk0p3-->mmcblk1p2)
+4. Recovery for secondary rom should be flashed using mobile uncle tools/sp flash tool before flashing secondary rom, second time. As this time we will need to wipe data, cache, dalvik-cache and system if required.
+
+For More info refer xda-developers.com
